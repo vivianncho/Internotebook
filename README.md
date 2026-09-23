@@ -13,6 +13,10 @@ npm run build      # outputs to dist/
 
 `BASE_PATH` can be set when the app is served from a sub-path (as on Replit).
 
+## Deploy to Vercel
+
+Import the GitHub repo at [vercel.com/new](https://vercel.com/new). `vercel.json` already sets the Vite build, the `dist` output folder, and a rewrite so page URLs like `/objectives` work on refresh. No environment variables are needed.
+
 ## Features
 
 - **First-run setup**: name, email, role, and company, then draw your companion (pen, eraser, colors, brush sizes, undo/redo) or keep the default bunny.
