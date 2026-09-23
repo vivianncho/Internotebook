@@ -14,7 +14,8 @@ const HISTORY_LIMIT = 30;
 const palette = ['#294557', '#2a7ab8', '#7cc0e8', '#3a756a', '#8cc9a0', '#f2c14e', '#e9a87b', '#e4717a', '#efb1a7', '#9e9ac9', '#8b5e3c', '#ffffff'];
 const sizes = [{ label: 'Fine', value: 4 }, { label: 'Medium', value: 9 }, { label: 'Bold', value: 18 }];
 
-export function DrawingPad({ initialImage = '', ref }: { initialImage?: string; ref?: Ref<DrawingPadHandle> }) {
+/** `onChange` fires after each stroke, undo, redo, or clear with the current image (null when blank). */
+export function DrawingPad({ initialImage = '', onChange, ref }: { initialImage?: string; onChange?: (image: string | null) => void; ref?: Ref<DrawingPadHandle> }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawing = useRef(false);
   const last = useRef<{ x: number; y: number } | null>(null);
@@ -23,6 +24,9 @@ export function DrawingPad({ initialImage = '', ref }: { initialImage?: string; 
   const [size, setSize] = useState(sizes[1].value);
   const [undoStack, setUndoStack] = useState<ImageData[]>([]);
   const [redoStack, setRedoStack] = useState<ImageData[]>([]);
+
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
 
   const context = () => canvasRef.current?.getContext('2d', { willReadFrequently: true }) ?? null;
 
@@ -51,6 +55,7 @@ export function DrawingPad({ initialImage = '', ref }: { initialImage?: string; 
     setTo((stack) => [...stack, current]);
     setFrom(from.slice(0, -1));
     ctx.putImageData(previous, 0, 0);
+    notify();
   };
   const undo = () => restore(undoStack, setUndoStack, setRedoStack);
   const redo = () => restore(redoStack, setRedoStack, setUndoStack);
@@ -60,24 +65,28 @@ export function DrawingPad({ initialImage = '', ref }: { initialImage?: string; 
     if (!ctx) return;
     pushHistory();
     ctx.clearRect(0, 0, SIZE, SIZE);
+    notify();
   };
 
-  useImperativeHandle(ref, () => ({
-    clear,
-    getImage: () => {
-      const canvas = canvasRef.current;
-      const pixels = snapshot()?.data;
-      if (!canvas || !pixels) return null;
-      let blank = true;
-      for (let i = 3; i < pixels.length; i += 4) if (pixels[i] > 0) { blank = false; break; }
-      if (blank) return null;
-      const out = document.createElement('canvas');
-      out.width = EXPORT_SIZE;
-      out.height = EXPORT_SIZE;
-      out.getContext('2d')?.drawImage(canvas, 0, 0, EXPORT_SIZE, EXPORT_SIZE);
-      return out.toDataURL('image/png');
-    },
-  }));
+  const getImage = () => {
+    const canvas = canvasRef.current;
+    const pixels = snapshot()?.data;
+    if (!canvas || !pixels) return null;
+    let blank = true;
+    for (let i = 3; i < pixels.length; i += 4) if (pixels[i] > 0) { blank = false; break; }
+    if (blank) return null;
+    const out = document.createElement('canvas');
+    out.width = EXPORT_SIZE;
+    out.height = EXPORT_SIZE;
+    out.getContext('2d')?.drawImage(canvas, 0, 0, EXPORT_SIZE, EXPORT_SIZE);
+    return out.toDataURL('image/png');
+  };
+
+  function notify() {
+    onChangeRef.current?.(getImage());
+  }
+
+  useImperativeHandle(ref, () => ({ clear, getImage }));
 
   const point = (event: ReactPointerEvent<HTMLCanvasElement>) => {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -115,6 +124,7 @@ export function DrawingPad({ initialImage = '', ref }: { initialImage?: string; 
     last.current = p;
   };
   const stop = () => {
+    if (drawing.current) notify();
     drawing.current = false;
     last.current = null;
   };

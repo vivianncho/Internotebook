@@ -1,7 +1,7 @@
-import { useRef, useState, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import { ArrowLeft, ArrowRight, Check, Compass } from 'lucide-react';
-import { DrawingPad, type DrawingPadHandle } from '@/components/drawing-pad';
-import { Bunny, Field, SpeechBubble, buttonPrimary, buttonQuiet, inputClass } from '@/components/ui';
+import { DrawingPad } from '@/components/drawing-pad';
+import { Companion, Field, SpeechBubble, buttonPrimary, buttonQuiet, inputClass } from '@/components/ui';
 import { emptyDetails, type Actions } from '@/hooks/use-notebook';
 import { todayISO } from '@/lib/dates';
 
@@ -9,7 +9,7 @@ export default function Onboarding({ actions }: { actions: Actions }) {
   const [step, setStep] = useState<1 | 2>(1);
   const [form, setForm] = useState({ name: '', email: '', role: '', company: '', startDate: todayISO(), endDate: '' });
   const [companionName, setCompanionName] = useState('');
-  const pad = useRef<DrawingPadHandle>(null);
+  const [drawing, setDrawing] = useState<string | null>(null);
 
   const next = (event: FormEvent) => {
     event.preventDefault();
@@ -21,7 +21,7 @@ export default function Onboarding({ actions }: { actions: Actions }) {
       {
         name: form.name.trim(),
         email: form.email.trim(),
-        companion: (withDrawing && pad.current?.getImage()) || '',
+        companion: (withDrawing && drawing) || '',
         companionName: companionName.trim(),
         reminders: true,
         emailReminders: false,
@@ -44,12 +44,9 @@ export default function Onboarding({ actions }: { actions: Actions }) {
 
         {step === 1 ? (
           <form onSubmit={next} className="paper-card rounded-3xl p-6 sm:p-9">
-            <div className="mb-7 flex items-end gap-4">
-              <div className="hidden sm:block"><Bunny small /></div>
-              <div>
-                <h1 className="display-font text-4xl font-semibold tracking-[-.02em]">Welcome! Let’s set up your notebook.</h1>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">A few details to get started. Everything stays private on this device.</p>
-              </div>
+            <div className="mb-7">
+              <h1 className="display-font text-4xl font-semibold tracking-[-.02em]">Welcome! Let’s set up your notebook.</h1>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">A few details to get started. Everything stays private on this device.</p>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Your name"><input autoFocus required className={inputClass} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} autoComplete="name" /></Field>
@@ -71,22 +68,31 @@ export default function Onboarding({ actions }: { actions: Actions }) {
               Anything you like: a pet, a plant, a little creature. They’ll greet you every day with a bit of encouragement. You can redraw them any time.
             </p>
             <div className="mt-6 grid gap-6 md:grid-cols-[1fr_.6fr]">
-              <DrawingPad ref={pad} />
+              <DrawingPad onChange={setDrawing} />
               <div className="flex flex-col gap-4">
                 <Field label="Give them a name" hint="Optional">
                   <input className={inputClass} value={companionName} onChange={(e) => setCompanionName(e.target.value)} placeholder="e.g. Mochi" />
                 </Field>
-                <SpeechBubble>
-                  <p className="text-sm font-semibold">Hi {form.name.split(' ')[0]}!</p>
-                  <p className="mt-1 text-sm text-muted-foreground">I’ll be here with a new quote every day.</p>
-                </SpeechBubble>
+                {drawing ? (
+                  <div className="animate-fade">
+                    <SpeechBubble tail="down">
+                      <p className="text-sm font-semibold">Hi {form.name.split(' ')[0]}!{companionName.trim() && ` I’m ${companionName.trim()}.`}</p>
+                      <p className="mt-1 text-sm text-muted-foreground">I’ll be here with a new quote every day.</p>
+                    </SpeechBubble>
+                    <div className="mt-4 flex justify-center"><Companion image={drawing} name={companionName} bob /></div>
+                  </div>
+                ) : (
+                  <div className="flex min-h-48 items-center justify-center rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+                    Start drawing and your companion will say hi here.
+                  </div>
+                )}
               </div>
             </div>
             <div className="mt-7 flex flex-wrap items-center justify-between gap-3">
               <button type="button" onClick={() => setStep(1)} className={buttonQuiet}><ArrowLeft size={16} /> Back</button>
               <div className="flex flex-wrap gap-2">
-                <button type="button" onClick={() => finish(false)} className={buttonQuiet}>Skip, use the bunny</button>
-                <button type="button" onClick={() => finish(true)} className={buttonPrimary}>Start my notebook <Check size={16} /></button>
+                <button type="button" onClick={() => finish(false)} className={buttonQuiet}>Skip for now</button>
+                <button type="button" onClick={() => finish(true)} disabled={!drawing} className={buttonPrimary}>Start my notebook <Check size={16} /></button>
               </div>
             </div>
           </div>

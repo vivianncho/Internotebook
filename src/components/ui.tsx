@@ -42,13 +42,19 @@ export function Companion({ image, name, size = 'lg', bob = false }: { image: st
   );
 }
 
-export function SpeechBubble({ children }: { children: ReactNode }) {
+/** `tail="auto"` points left on wide screens and down on phones; `"down"` always points down (centered). */
+export function SpeechBubble({ children, tail = 'auto' }: { children: ReactNode; tail?: 'auto' | 'down' }) {
   return (
     <div className="relative rounded-2xl border border-border bg-card px-5 py-4 shadow-[var(--shadow-card)]">
       {children}
-      {/* Tail pointing at the companion: left on wide screens, down on phones. */}
-      <span className="absolute -left-2 top-8 hidden h-4 w-4 rotate-45 border-b border-l border-border bg-card sm:block" />
-      <span className="absolute -bottom-2 left-12 h-4 w-4 rotate-45 border-b border-r border-border bg-card sm:hidden" />
+      {tail === 'auto' ? (
+        <>
+          <span className="absolute -left-2 top-8 hidden h-4 w-4 rotate-45 border-b border-l border-border bg-card sm:block" />
+          <span className="absolute -bottom-2 left-12 h-4 w-4 rotate-45 border-b border-r border-border bg-card sm:hidden" />
+        </>
+      ) : (
+        <span className="absolute -bottom-2 left-1/2 h-4 w-4 -translate-x-1/2 rotate-45 border-b border-r border-border bg-card" />
+      )}
     </div>
   );
 }
