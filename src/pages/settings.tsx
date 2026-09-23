@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
-import { Link } from 'wouter';
-import { Check, Heart } from 'lucide-react';
-import { Companion, Field, PageHeader, ToggleRow, buttonPrimary, buttonQuiet, inputClass } from '@/components/ui';
+import { Link, useLocation } from 'wouter';
+import { AlertTriangle, Check, Heart, RotateCcw } from 'lucide-react';
+import { Companion, Field, Modal, PageHeader, ToggleRow, buttonPrimary, buttonQuiet, inputClass } from '@/components/ui';
 import type { Actions, Profile } from '@/hooks/use-notebook';
 
 export default function Settings({ profile, actions }: { profile: Profile; actions: Actions }) {
@@ -17,8 +17,12 @@ export default function Settings({ profile, actions }: { profile: Profile; actio
     window.setTimeout(() => setSaved(false), 2200);
   };
 
-  const resetAll = () => {
-    if (window.confirm('Erase everything, including all internships, notes, objectives, and drawings, and start over? This cannot be undone.')) actions.reset();
+  const [, navigate] = useLocation();
+  const [confirmingReset, setConfirmingReset] = useState(false);
+
+  const startOver = () => {
+    navigate('/');
+    actions.reset();
   };
 
   return (
@@ -54,10 +58,39 @@ export default function Settings({ profile, actions }: { profile: Profile; actio
         </section>
         <div className="flex flex-wrap items-center justify-end gap-3 lg:col-span-2">
           <span className={`text-sm text-primary transition ${saved ? 'opacity-100' : 'opacity-0'}`} role="status">Saved</span>
-          <button type="button" onClick={resetAll} className="rounded-xl px-3 py-2 text-sm font-semibold text-muted-foreground hover:bg-destructive/10 hover:text-destructive">Erase everything</button>
           <button type="submit" className={buttonPrimary}>Save settings <Check size={16} /></button>
         </div>
       </form>
+
+      <section className="mt-8 flex flex-col gap-4 rounded-2xl border border-destructive/30 bg-destructive/5 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+        <div>
+          <h2 className="font-semibold">Start over</h2>
+          <p className="mt-1 text-sm text-muted-foreground">Erase this notebook and go back to the welcome page.</p>
+        </div>
+        <button type="button" onClick={() => setConfirmingReset(true)} className="inline-flex items-center justify-center gap-2 rounded-xl border border-destructive/40 bg-card px-4 py-2.5 text-sm font-semibold text-destructive transition hover:bg-destructive hover:text-white">
+          <RotateCcw size={16} /> Start over
+        </button>
+      </section>
+
+      {confirmingReset && (
+        <Modal title="Start over?" onClose={() => setConfirmingReset(false)}>
+          <div className="flex gap-3 rounded-xl bg-destructive/10 p-4 text-sm leading-6">
+            <AlertTriangle size={20} className="mt-0.5 shrink-0 text-destructive" />
+            <p>This permanently deletes <span className="font-semibold">everything</span> saved on this device and cannot be undone.</p>
+          </div>
+          <ul className="mt-4 grid gap-1 pl-5 text-sm text-muted-foreground [list-style:disc]">
+            <li>Your profile and your companion drawing</li>
+            <li>All internships, with their notes, learning objectives, calendar, coffee chats, and experience log</li>
+            <li>Your sketchbook</li>
+          </ul>
+          <div className="mt-6 flex justify-end gap-2">
+            <button type="button" autoFocus onClick={() => setConfirmingReset(false)} className={buttonQuiet}>Cancel</button>
+            <button type="button" onClick={startOver} className="inline-flex items-center justify-center gap-2 rounded-xl bg-destructive px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90">
+              <RotateCcw size={16} /> Yes, erase and start over
+            </button>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { X, type LucideIcon } from 'lucide-react';
 
 export const inputClass = 'w-full rounded-xl border border-border bg-card px-3.5 py-2.5 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15';
@@ -60,7 +61,8 @@ export function SpeechBubble({ children, tail = 'auto' }: { children: ReactNode;
 }
 
 export function Modal({ title, onClose, children, width = 'max-w-lg' }: { title: string; onClose: () => void; children: ReactNode; width?: string }) {
-  return (
+  // Portal to <body>: the pages' rise-in animation uses transform, which would otherwise trap a fixed overlay inside the page.
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[hsl(211_31%_20%/.35)] p-4 backdrop-blur-sm animate-fade" role="dialog" aria-modal="true" aria-label={title}>
       <div className={`paper-card ${width} max-h-[90dvh] w-full overflow-y-auto rounded-2xl p-5 sm:p-6 animate-rise`}>
         <div className="mb-5 flex items-start justify-between gap-4">
@@ -69,7 +71,8 @@ export function Modal({ title, onClose, children, width = 'max-w-lg' }: { title:
         </div>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
